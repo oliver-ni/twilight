@@ -1511,6 +1511,7 @@ impl Client {
                 .map_err(|source| Error::BuildingRequest { source })?
         };
 
+        println!("{:?}", req);
         let inner = self.state.http.request(req);
         let fut = time::timeout(self.state.timeout, inner);
 
