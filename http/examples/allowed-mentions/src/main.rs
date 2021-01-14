@@ -9,12 +9,13 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     //if we want to set the default for allowed mentions we need to use the builder, keep in mind these calls can't be chained!
     let client = Client::builder()
+        //.proxy("localhost:8080", true)
         .token(env::var("DISCORD_TOKEN")?)
         //add an empty allowed mentions, this will prevent any and all pings
         .default_allowed_mentions(AllowedMentionsBuilder::new().build_solo())
         .build();
-    let channel_id = ChannelId(381_926_291_785_383_946);
-    let user_id = UserId(77_469_400_222_932_992);
+    let channel_id = ChannelId(480009549605240846);
+    let user_id = UserId(356091260429402122);
 
     //here we want to warn a user about trying to ping everyone so we override to allow pinging them
     //but since we did not allow @everyone pings it will not ping everyone
