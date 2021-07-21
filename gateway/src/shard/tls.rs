@@ -133,7 +133,7 @@ impl TlsContainer {
         })
     }
 
-    pub fn tls_domain<'a>(&self, url: &'a Url) -> Result<(String, Connector), TlsError> {
+    pub fn tls_domain(&self, url: &Url) -> Result<(String, Connector), TlsError> {
         let domain = url.domain().ok_or(TlsError {
             kind: TlsErrorType::NoDomain,
             source: None,
