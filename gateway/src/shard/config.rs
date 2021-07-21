@@ -4,6 +4,8 @@ use twilight_gateway_queue::Queue;
 use twilight_http::Client;
 use twilight_model::gateway::{payload::update_presence::UpdatePresencePayload, Intents};
 
+use super::tls::TlsContainer;
+
 /// The configuration used by the shard to identify with the gateway and
 /// operate.
 ///
@@ -23,6 +25,7 @@ pub struct Config {
     pub(super) token: Box<str>,
     pub(crate) session_id: Option<Box<str>>,
     pub(crate) sequence: Option<u64>,
+    pub(crate) tls: Option<TlsContainer>,
 }
 
 impl Config {

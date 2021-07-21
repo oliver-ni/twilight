@@ -164,8 +164,8 @@ pub enum ClusterSendErrorType {
 /// Starting a cluster failed.
 #[derive(Debug)]
 pub struct ClusterStartError {
-    kind: ClusterStartErrorType,
-    source: Option<Box<dyn Error + Send + Sync>>,
+    pub(super) kind: ClusterStartErrorType,
+    pub(super) source: Option<Box<dyn Error + Send + Sync>>,
 }
 
 impl ClusterStartError {
@@ -194,6 +194,9 @@ impl Display for ClusterStartError {
             ClusterStartErrorType::RetrievingGatewayInfo { .. } => {
                 f.write_str("getting the bot's gateway info failed")
             }
+            ClusterStartErrorType::Tls => {
+                f.write_str("creating the TLS connector resulted in a error")
+            }
         }
     }
 }
@@ -218,6 +221,8 @@ pub enum ClusterStartErrorType {
     ///
     /// [automatic sharding]: ShardScheme::Auto
     RetrievingGatewayInfo,
+    /// Creating the TLS connector resulted in a error.
+    Tls,
 }
 
 #[derive(Debug)]
