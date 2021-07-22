@@ -91,7 +91,7 @@ pub struct TlsContainer {
 #[cfg(feature = "rustls")]
 impl std::fmt::Debug for TlsContainer {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_struct("TlsContainer").finish_non_exhaustive()
+        f.debug_struct("TlsContainer").finish()
     }
 }
 
