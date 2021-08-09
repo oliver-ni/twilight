@@ -20,7 +20,7 @@ bitflags = { default-features = false, version = "1" }
 twilight-gateway-queue = { default-features = false, path = "./queue" }
 twilight-http = { default-features = false, path = "../http" }
 twilight-model = { default-features = false, path = "../model" }
-futures-util = { default-features = false, features = ["std"], version = "0.3" }
+futures-util = { default-features = false, features = ["sink", "std"], version = "0.3" }
 serde = { default-features = false, features = ["derive"], version = "1" }
 serde_json = { default-features = false, version = "1" }
 tokio = { default-features = false, features = ["net", "rt", "sync"], version = "1.5" }

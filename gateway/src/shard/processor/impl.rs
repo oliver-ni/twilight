@@ -36,7 +36,7 @@ use twilight_model::gateway::{
     },
     Intents, OpCode,
 };
-use websocket_lite::{Connector, Message, Opcode};
+use websocket_lite::{CloseCode, CloseFrame, Connector, Message, Opcode};
 
 /// Connecting to the gateway failed.
 #[derive(Debug)]
@@ -665,14 +665,18 @@ impl ShardProcessor {
         #[cfg(feature = "tracing")]
         tracing::debug!("got request to reconnect");
 
-        let frame = (1012, String::from("Reconnecting"));
+        let frame = CloseFrame {
+            code: CloseCode::Restart,
+            reason: String::from("Reconnecting"),
+        };
         self.session
             .close(Some(frame.clone()))
             .map_err(|source| ProcessError {
                 source: Some(Box::new(source)),
                 kind: ProcessErrorType::SendingClose,
             })?;
-        self.emit_disconnected(Some(frame.0), Some(frame.1)).await;
+        self.emit_disconnected(Some(frame.code.into()), Some(frame.reason))
+            .await;
         self.resume().await;
 
         Ok(())
@@ -759,10 +763,7 @@ impl ShardProcessor {
                 Ok(extended)
             }
             Opcode::Close => {
-                let close_data = msg
-                    .as_close()
-                    .map(|(code, reason)| (code, reason.to_owned()));
-                self.handle_close(close_data.as_ref()).await?;
+                self.handle_close(msg.as_close().as_ref()).await?;
 
                 Ok(false)
             }
@@ -783,17 +784,20 @@ impl ShardProcessor {
 
     async fn handle_close(
         &mut self,
-        close_frame: Option<&(u16, String)>,
+        close_frame: Option<&CloseFrame>,
     ) -> Result<(), ReceivingEventError> {
         #[cfg(feature = "tracing")]
         tracing::info!("got close code: {:?}", close_frame);
 
-        self.emit_disconnected(close_frame.map(|c| c.0), close_frame.map(|c| c.1.clone()))
-            .await;
+        self.emit_disconnected(
+            close_frame.map(|c| c.code.into()),
+            close_frame.map(|c| c.reason.clone()),
+        )
+        .await;
 
         if let Some(close_frame) = close_frame {
-            match close_frame.0 {
-                4004 => {
+            match close_frame.code {
+                CloseCode::Library(4004) => {
                     return Err(ReceivingEventError {
                         kind: ReceivingEventErrorType::AuthorizationInvalid {
                             shard_id: self.config.shard()[0],
@@ -802,7 +806,7 @@ impl ShardProcessor {
                         source: None,
                     });
                 }
-                4013 => {
+                CloseCode::Library(4013) => {
                     return Err(ReceivingEventError {
                         kind: ReceivingEventErrorType::IntentsInvalid {
                             intents: self.config.intents(),
@@ -811,7 +815,7 @@ impl ShardProcessor {
                         source: None,
                     });
                 }
-                4014 => {
+                CloseCode::Library(4014) => {
                     return Err(ReceivingEventError {
                         kind: ReceivingEventErrorType::IntentsDisallowed {
                             intents: self.config.intents(),

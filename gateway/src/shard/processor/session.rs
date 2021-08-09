@@ -22,7 +22,7 @@ use tokio::{
     task::JoinHandle,
 };
 use twilight_model::gateway::payload::Heartbeat;
-use websocket_lite::Message as WebsocketMessage;
+use websocket_lite::{CloseFrame, Message as WebsocketMessage};
 
 #[derive(Debug)]
 pub struct SessionSendError {
@@ -118,7 +118,7 @@ impl Session {
 
     pub fn close(
         &self,
-        close_frame: Option<(u16, String)>,
+        close_frame: Option<CloseFrame>,
     ) -> Result<(), SendError<WebsocketMessage>> {
         self.tx.send(WebsocketMessage::close(close_frame))
     }

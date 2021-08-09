@@ -20,6 +20,7 @@ use tokio::{
     sync::{watch::Receiver as WatchReceiver, OnceCell},
     task::JoinHandle,
 };
+use websocket_lite::{CloseCode, CloseFrame};
 
 /// Sending a command failed.
 #[derive(Debug)]
@@ -681,7 +682,10 @@ impl Shard {
 
         if let Ok(session) = self.session() {
             // Since we're shutting down now, we don't care if it sends or not.
-            let _res = session.close(Some((1000, "".into())));
+            let _res = session.close(Some(CloseFrame {
+                code: CloseCode::Normal,
+                reason: String::from(""),
+            }));
             session.stop_heartbeater();
         }
     }
@@ -706,7 +710,10 @@ impl Shard {
             Err(_) => return (shard_id, None),
         };
 
-        let _res = session.close(Some((1012, String::from("Closing in a resumable way"))));
+        let _res = session.close(Some(CloseFrame {
+            code: CloseCode::Restart,
+            reason: String::from("Closing in a resumable way"),
+        }));
 
         let session_id = session.id();
         let sequence = session.seq.load(Ordering::Relaxed);

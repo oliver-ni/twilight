@@ -7,7 +7,7 @@
 //! websocket library.
 
 use std::borrow::Cow;
-use websocket_lite::Message as WebsocketMessage;
+use websocket_lite::{CloseFrame as WebsocketLiteCloseFrame, Message as WebsocketMessage};
 
 /// Information about a close message, if any.
 ///
@@ -68,7 +68,10 @@ impl Message {
         match self {
             Self::Binary(bytes) => WebsocketMessage::binary(bytes),
             Self::Close(close) => {
-                WebsocketMessage::close(close.map(|close| (close.code, close.reason.into())))
+                WebsocketMessage::close(close.map(|frame| WebsocketLiteCloseFrame {
+                    code: frame.code.into(),
+                    reason: frame.reason.to_string(),
+                }))
             }
             Self::Ping(bytes) => WebsocketMessage::ping(bytes),
             Self::Pong(bytes) => WebsocketMessage::pong(bytes),

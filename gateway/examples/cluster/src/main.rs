@@ -3,7 +3,7 @@ use twilight_gateway::{
     Intents,
 };
 
-use futures::StreamExt;
+use futures_util::StreamExt;
 use std::{env, error::Error};
 
 #[tokio::main]
