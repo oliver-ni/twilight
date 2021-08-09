@@ -10,10 +10,9 @@ use super::{
     session::{Session, SessionSendError, SessionSendErrorType},
     socket_forwarder::SocketForwarder,
 };
-use crate::{event::EventTypeFlags, shard::tls::TlsContainer};
+use crate::event::EventTypeFlags;
 use serde::{Deserialize, Serialize};
 use std::{
-    borrow::Cow,
     env::consts::OS,
     error::Error,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
@@ -21,16 +20,9 @@ use std::{
     sync::{atomic::Ordering, Arc},
     time::Duration,
 };
-use tokio::{
-    net::TcpStream,
-    sync::{
-        mpsc::UnboundedReceiver,
-        watch::{channel as watch_channel, Receiver as WatchReceiver, Sender as WatchSender},
-    },
-};
-use tokio_tungstenite::tungstenite::{
-    protocol::{frame::coding::CloseCode, CloseFrame, WebSocketConfig},
-    Message,
+use tokio::sync::{
+    mpsc::UnboundedReceiver,
+    watch::{channel as watch_channel, Receiver as WatchReceiver, Sender as WatchSender},
 };
 use twilight_model::gateway::{
     event::{
@@ -44,7 +36,7 @@ use twilight_model::gateway::{
     },
     Intents, OpCode,
 };
-use url::Url;
+use websocket_lite::{Connector, Message, Opcode};
 
 /// Connecting to the gateway failed.
 #[derive(Debug)]
@@ -673,18 +665,14 @@ impl ShardProcessor {
         #[cfg(feature = "tracing")]
         tracing::debug!("got request to reconnect");
 
-        let frame = CloseFrame {
-            code: CloseCode::Restart,
-            reason: Cow::Borrowed("Reconnecting"),
-        };
+        let frame = (1012, String::from("Reconnecting"));
         self.session
             .close(Some(frame.clone()))
             .map_err(|source| ProcessError {
                 source: Some(Box::new(source)),
                 kind: ProcessErrorType::SendingClose,
             })?;
-        self.emit_disconnected(Some(frame.code.into()), Some(frame.reason.to_string()))
-            .await;
+        self.emit_disconnected(Some(frame.0), Some(frame.1)).await;
         self.resume().await;
 
         Ok(())
@@ -751,9 +739,9 @@ impl ShardProcessor {
         &'a mut self,
         msg: &'a mut Message,
     ) -> Result<bool, ReceivingEventError> {
-        match msg {
-            Message::Binary(json) => {
-                let extended = self.compression.extend_binary(json.as_slice());
+        match msg.opcode() {
+            Opcode::Binary => {
+                let extended = self.compression.extend_binary(msg.data());
 
                 if extended {
                     match self.compression.message_mut() {
@@ -770,42 +758,42 @@ impl ShardProcessor {
 
                 Ok(extended)
             }
-            Message::Close(close_frame) => {
-                self.handle_close(close_frame.as_ref()).await?;
+            Opcode::Close => {
+                let close_data = msg
+                    .as_close()
+                    .map(|(code, reason)| (code, reason.to_owned()));
+                self.handle_close(close_data.as_ref()).await?;
 
                 Ok(false)
             }
-            Message::Text(json) => {
-                let extended = self.compression.extend_text(json.as_bytes());
+            Opcode::Text => {
+                let extended = self.compression.extend_text(msg.data());
 
                 if extended {
-                    self.emitter.bytes(json.as_bytes());
+                    self.emitter.bytes(msg.data());
                 }
 
                 Ok(extended)
             }
             // Discord doesn't appear to send Text messages, so we can ignore
             // these.
-            Message::Ping(_) | Message::Pong(_) => Ok(false),
+            Opcode::Ping | Opcode::Pong => Ok(false),
         }
     }
 
     async fn handle_close(
         &mut self,
-        close_frame: Option<&CloseFrame<'_>>,
+        close_frame: Option<&(u16, String)>,
     ) -> Result<(), ReceivingEventError> {
         #[cfg(feature = "tracing")]
         tracing::info!("got close code: {:?}", close_frame);
 
-        self.emit_disconnected(
-            close_frame.map(|c| c.code.into()),
-            close_frame.map(|c| c.reason.to_string()),
-        )
-        .await;
+        self.emit_disconnected(close_frame.map(|c| c.0), close_frame.map(|c| c.1.clone()))
+            .await;
 
         if let Some(close_frame) = close_frame {
-            match close_frame.code {
-                CloseCode::Library(4004) => {
+            match close_frame.0 {
+                4004 => {
                     return Err(ReceivingEventError {
                         kind: ReceivingEventErrorType::AuthorizationInvalid {
                             shard_id: self.config.shard()[0],
@@ -814,7 +802,7 @@ impl ShardProcessor {
                         source: None,
                     });
                 }
-                CloseCode::Library(4013) => {
+                4013 => {
                     return Err(ReceivingEventError {
                         kind: ReceivingEventErrorType::IntentsInvalid {
                             intents: self.config.intents(),
@@ -823,7 +811,7 @@ impl ShardProcessor {
                         source: None,
                     });
                 }
-                CloseCode::Library(4014) => {
+                4014 => {
                     return Err(ReceivingEventError {
                         kind: ReceivingEventErrorType::IntentsDisallowed {
                             intents: self.config.intents(),
@@ -841,62 +829,33 @@ impl ShardProcessor {
         Ok(())
     }
 
-    async fn connect(
-        url: &str,
-        tls: Option<&TlsContainer>,
-    ) -> Result<ShardStream, ConnectingError> {
-        #[allow(disjoint_capture_migration)]
-        let url = Url::parse(url).map_err(|source| ConnectingError {
-            kind: ConnectingErrorType::ParsingUrl {
-                url: url.to_owned(),
-            },
-            source: Some(Box::new(source)),
-        })?;
-
-        // `max_frame_size` and `max_message_queue` limits are disabled because
-        // Discord is not a malicious actor.
-        //
-        // `accept_unmasked_frames` and `max_send_queue` are set to their
-        // defaults.
-        let config = WebSocketConfig {
-            accept_unmasked_frames: false,
-            max_frame_size: None,
-            max_message_size: None,
-            max_send_queue: None,
-        };
-
-        let (stream, _) = if let Some(tls) = tls {
-            let (address, tls_conn) = tls.tls_domain(&url).map_err(|err| ConnectingError {
-                kind: ConnectingErrorType::ParsingUrl {
-                    url: url.to_string(),
-                },
-                source: Some(Box::new(err)),
-            })?;
-
-            let socket = TcpStream::connect(address)
-                .await
-                .map_err(|err| ConnectingError {
-                    kind: ConnectingErrorType::Establishing,
-                    source: Some(Box::new(err)),
+    async fn connect(url: &str, tls: Option<&Connector>) -> Result<ShardStream, ConnectingError> {
+        let stream = if let Some(tls) = tls {
+            let mut builder =
+                websocket_lite::ClientBuilder::new(url).map_err(|source| ConnectingError {
+                    kind: ConnectingErrorType::ParsingUrl {
+                        url: url.to_owned(),
+                    },
+                    source: Some(Box::new(source)),
                 })?;
-
-            tokio_tungstenite::client_async_tls_with_config(
-                url,
-                socket,
-                Some(config),
-                Some(tls_conn),
-            )
-            .await
-            .map_err(|source| ConnectingError {
+            builder.set_connector(tls.clone());
+            builder.connect().await.map_err(|source| ConnectingError {
                 kind: ConnectingErrorType::Establishing,
-                source: Some(Box::new(source)),
+                source: Some(source),
             })?
         } else {
-            tokio_tungstenite::connect_async_with_config(url, Some(config))
+            websocket_lite::ClientBuilder::new(url)
+                .map_err(|source| ConnectingError {
+                    kind: ConnectingErrorType::ParsingUrl {
+                        url: url.to_owned(),
+                    },
+                    source: Some(Box::new(source)),
+                })?
+                .connect()
                 .await
                 .map_err(|source| ConnectingError {
                     kind: ConnectingErrorType::Establishing,
-                    source: Some(Box::new(source)),
+                    source: Some(source),
                 })?
         };
 

@@ -29,7 +29,6 @@ mod event;
 mod r#impl;
 mod json;
 mod processor;
-pub(crate) mod tls;
 
 pub use self::{
     builder::{
@@ -46,6 +45,6 @@ pub use self::{
 };
 
 use tokio::net::TcpStream;
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+use websocket_lite::{Client, MaybeTlsStream};
 
-type ShardStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
+type ShardStream = Client<MaybeTlsStream<TcpStream>>;

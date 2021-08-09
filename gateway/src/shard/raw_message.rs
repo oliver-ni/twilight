@@ -7,10 +7,7 @@
 //! websocket library.
 
 use std::borrow::Cow;
-use tokio_tungstenite::tungstenite::{
-    protocol::{frame::coding::CloseCode, CloseFrame as TungsteniteCloseFrame},
-    Message as TungsteniteMessage,
-};
+use websocket_lite::Message as WebsocketMessage;
 
 /// Information about a close message, if any.
 ///
@@ -67,18 +64,15 @@ pub enum Message {
 }
 
 impl Message {
-    pub(super) fn into_tungstenite(self) -> TungsteniteMessage {
+    pub(super) fn into_websocket_message(self) -> WebsocketMessage {
         match self {
-            Self::Binary(bytes) => TungsteniteMessage::Binary(bytes),
+            Self::Binary(bytes) => WebsocketMessage::binary(bytes),
             Self::Close(close) => {
-                TungsteniteMessage::Close(close.map(|close| TungsteniteCloseFrame {
-                    code: CloseCode::from(close.code),
-                    reason: close.reason,
-                }))
+                WebsocketMessage::close(close.map(|close| (close.code, close.reason.into())))
             }
-            Self::Ping(bytes) => TungsteniteMessage::Ping(bytes),
-            Self::Pong(bytes) => TungsteniteMessage::Pong(bytes),
-            Self::Text(string) => TungsteniteMessage::Text(string),
+            Self::Ping(bytes) => WebsocketMessage::ping(bytes),
+            Self::Pong(bytes) => WebsocketMessage::pong(bytes),
+            Self::Text(string) => WebsocketMessage::text(string),
         }
     }
 }

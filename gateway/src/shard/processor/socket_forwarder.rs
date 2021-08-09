@@ -9,7 +9,7 @@ use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     time::sleep,
 };
-use tokio_tungstenite::tungstenite::Message;
+use websocket_lite::Message;
 
 pub struct SocketForwarder {
     rx: UnboundedReceiver<Message>,
@@ -55,7 +55,7 @@ impl SocketForwarder {
                 Either::Left((Either::Left((maybe_msg, _)), _)) => {
                     if let Some(msg) = maybe_msg {
                         #[cfg(feature = "tracing")]
-                        tracing::trace!("sending message: {}", msg);
+                        tracing::trace!("sending message: {:?}", msg);
 
                         if let Err(_source) = self.stream.send(msg).await {
                             #[cfg(feature = "tracing")]
@@ -67,7 +67,7 @@ impl SocketForwarder {
                         #[cfg(feature = "tracing")]
                         tracing::debug!("rx stream ended, closing socket");
 
-                        let _res = self.stream.close(None).await;
+                        let _res = SinkExt::<Message>::close(&mut self.stream).await;
 
                         break;
                     }

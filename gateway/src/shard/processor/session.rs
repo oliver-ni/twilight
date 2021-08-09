@@ -21,8 +21,8 @@ use tokio::{
     },
     task::JoinHandle,
 };
-use tokio_tungstenite::tungstenite::{protocol::CloseFrame, Message as TungsteniteMessage};
 use twilight_model::gateway::payload::Heartbeat;
+use websocket_lite::Message as WebsocketMessage;
 
 #[derive(Debug)]
 pub struct SessionSendError {
@@ -71,12 +71,12 @@ pub struct Session {
     pub id: MutexSync<Option<Box<str>>>,
     pub seq: Arc<AtomicU64>,
     pub stage: AtomicU8,
-    pub tx: UnboundedSender<TungsteniteMessage>,
+    pub tx: UnboundedSender<WebsocketMessage>,
     pub ratelimit: Mutex<Throttle>,
 }
 
 impl Session {
-    pub fn new(tx: UnboundedSender<TungsteniteMessage>) -> Self {
+    pub fn new(tx: UnboundedSender<WebsocketMessage>) -> Self {
         Self {
             heartbeater_handle: Arc::new(MutexSync::new(None)),
             heartbeats: Arc::new(Heartbeats::default()),
@@ -107,7 +107,7 @@ impl Session {
         })?;
 
         self.tx
-            .send(TungsteniteMessage::Binary(bytes))
+            .send(WebsocketMessage::binary(bytes))
             .map_err(|source| SessionSendError {
                 kind: SessionSendErrorType::Sending,
                 source: Some(Box::new(source)),
@@ -118,9 +118,9 @@ impl Session {
 
     pub fn close(
         &self,
-        close_frame: Option<CloseFrame<'static>>,
-    ) -> Result<(), SendError<TungsteniteMessage>> {
-        self.tx.send(TungsteniteMessage::Close(close_frame))
+        close_frame: Option<(u16, String)>,
+    ) -> Result<(), SendError<WebsocketMessage>> {
+        self.tx.send(WebsocketMessage::close(close_frame))
     }
 
     pub fn heartbeat_interval(&self) -> u64 {

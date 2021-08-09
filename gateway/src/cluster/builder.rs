@@ -6,13 +6,14 @@ use super::{
     ClusterStartErrorType,
 };
 use crate::{
-    shard::{tls::TlsContainer, LargeThresholdError, ResumeSession, ShardBuilder},
+    shard::{LargeThresholdError, ResumeSession, ShardBuilder},
     EventTypeFlags,
 };
 use std::{collections::HashMap, sync::Arc};
 use twilight_gateway_queue::{LocalQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::{payload::update_presence::UpdatePresencePayload, Intents};
+use websocket_lite::Connector;
 
 /// Builder to configure and construct a [`Cluster`].
 ///
@@ -61,9 +62,9 @@ impl ClusterBuilder {
     ///
     /// [`ClusterStartErrorType::RetrievingGatewayInfo`]: super::ClusterStartErrorType::RetrievingGatewayInfo
     pub async fn build(mut self) -> Result<(Cluster, Events), ClusterStartError> {
-        let tls = TlsContainer::new().map_err(|err| ClusterStartError {
+        let tls = Connector::with_default_tls_config().map_err(|err| ClusterStartError {
             kind: ClusterStartErrorType::Tls,
-            source: Some(Box::new(err)),
+            source: Some(err),
         })?;
 
         (self.1).0.tls = Some(tls);

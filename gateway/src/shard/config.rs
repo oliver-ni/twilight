@@ -3,8 +3,7 @@ use std::sync::Arc;
 use twilight_gateway_queue::Queue;
 use twilight_http::Client;
 use twilight_model::gateway::{payload::update_presence::UpdatePresencePayload, Intents};
-
-use super::tls::TlsContainer;
+use websocket_lite::Connector;
 
 /// The configuration used by the shard to identify with the gateway and
 /// operate.
@@ -25,7 +24,7 @@ pub struct Config {
     pub(super) token: Box<str>,
     pub(crate) session_id: Option<Box<str>>,
     pub(crate) sequence: Option<u64>,
-    pub(crate) tls: Option<TlsContainer>,
+    pub(crate) tls: Option<Connector>,
 }
 
 impl Config {

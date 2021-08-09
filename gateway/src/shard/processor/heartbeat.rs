@@ -13,8 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::mpsc::UnboundedSender;
-use tokio_tungstenite::tungstenite::Message as TungsteniteMessage;
 use twilight_model::gateway::payload::Heartbeat;
+use websocket_lite::Message as WebsocketMessage;
 
 /// Information about the latency of a [`Shard`]'s websocket connection.
 ///
@@ -179,7 +179,7 @@ pub struct Heartbeater {
     heartbeats: Arc<Heartbeats>,
     interval: u64,
     seq: Arc<AtomicU64>,
-    tx: UnboundedSender<TungsteniteMessage>,
+    tx: UnboundedSender<WebsocketMessage>,
 }
 
 impl Heartbeater {
@@ -187,7 +187,7 @@ impl Heartbeater {
         heartbeats: Arc<Heartbeats>,
         interval: u64,
         seq: Arc<AtomicU64>,
-        tx: UnboundedSender<TungsteniteMessage>,
+        tx: UnboundedSender<WebsocketMessage>,
     ) -> Self {
         Self {
             heartbeats,
@@ -242,7 +242,7 @@ impl Heartbeater {
             tracing::debug!(seq, "sending heartbeat");
 
             self.tx
-                .send(TungsteniteMessage::Binary(bytes))
+                .send(WebsocketMessage::binary(bytes))
                 .map_err(|source| SessionSendError {
                     kind: SessionSendErrorType::Sending,
                     source: Some(Box::new(source)),

@@ -12,7 +12,6 @@ use crate::Intents;
 use futures_util::stream::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::{
-    borrow::Cow,
     error::Error,
     fmt::{Display, Formatter, Result as FmtResult},
     sync::{atomic::Ordering, Arc, Mutex},
@@ -20,9 +19,6 @@ use std::{
 use tokio::{
     sync::{watch::Receiver as WatchReceiver, OnceCell},
     task::JoinHandle,
-};
-use tokio_tungstenite::tungstenite::protocol::{
-    frame::coding::CloseCode, CloseFrame as TungsteniteCloseFrame,
 };
 
 /// Sending a command failed.
@@ -634,7 +630,7 @@ impl Shard {
         // Only tick the ratelimiter if there wasn't an error sending it over
         // the tx. If tx sending fails then the message couldn't be sent anyway,
         // which does not affect ratelimiting of external sending.
-        match session.tx.send(message.into_tungstenite()) {
+        match session.tx.send(message.into_websocket_message()) {
             Ok(()) => {
                 // Tick ratelimiter.
                 session.ratelimit.lock().await.next().await;
@@ -685,10 +681,7 @@ impl Shard {
 
         if let Ok(session) = self.session() {
             // Since we're shutting down now, we don't care if it sends or not.
-            let _res = session.close(Some(TungsteniteCloseFrame {
-                code: CloseCode::Normal,
-                reason: "".into(),
-            }));
+            let _res = session.close(Some((1000, "".into())));
             session.stop_heartbeater();
         }
     }
@@ -713,10 +706,7 @@ impl Shard {
             Err(_) => return (shard_id, None),
         };
 
-        let _res = session.close(Some(TungsteniteCloseFrame {
-            code: CloseCode::Restart,
-            reason: Cow::from("Closing in a resumable way"),
-        }));
+        let _res = session.close(Some((1012, String::from("Closing in a resumable way"))));
 
         let session_id = session.id();
         let sequence = session.seq.load(Ordering::Relaxed);
