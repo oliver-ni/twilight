@@ -259,6 +259,8 @@ pub enum Path {
     WebhooksIdTokenMessagesId(u64),
     /// Operating on a webhook.
     WebhooksId(u64),
+    /// Operating on an interaction's followup.
+    WebhooksIdToken(u64, Box<str>),
 }
 
 impl FromStr for Path {
@@ -402,7 +404,10 @@ impl FromStr for Path {
             ["users", _, "guilds"] => UsersIdGuilds,
             ["users", _, "guilds", _] => UsersIdGuildsId,
             ["voice", "regions"] => VoiceRegions,
-            ["webhooks", id] | ["webhooks", id, _] => WebhooksId(parse_id(id)?),
+            ["webhooks", id] => WebhooksId(parse_id(id)?),
+            ["webhooks", id, token] => {
+                WebhooksIdToken(parse_id(id)?, token.to_string().into_boxed_str())
+            }
             ["webhooks", id, _, "messages", _] => WebhooksIdTokenMessagesId(parse_id(id)?),
             _ => {
                 return Err(PathParseError {
