@@ -308,7 +308,12 @@ impl BucketQueueTask {
             }
 
             #[cfg(feature = "tracing")]
-            tracing::debug!(parent: &span, "0 tickets remaining, may have to wait");
+            tracing::debug!(
+                parent: &span,
+                "0 tickets remaining, may have to wait ({:?} in bucket, time {:?})",
+                self.bucket.remaining(),
+                self.bucket.time_remaining()
+            );
 
             match self.bucket.time_remaining() {
                 TimeRemaining::Finished => {
