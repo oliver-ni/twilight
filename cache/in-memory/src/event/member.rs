@@ -127,7 +127,7 @@ impl InMemoryCache {
 }
 
 impl UpdateCache for MemberAdd {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
             return;
         }
@@ -140,12 +140,12 @@ impl UpdateCache for MemberAdd {
             return;
         }
 
-        cache.cache_member(self.guild_id, self.0.clone());
+        cache.cache_member(self.guild_id, self.0);
     }
 }
 
 impl UpdateCache for MemberChunk {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
             return;
         }
@@ -162,19 +162,19 @@ impl UpdateCache for MemberChunk {
                     .find(|member| member.user.id == current_user.id);
 
                 if let Some(member) = current_member {
-                    cache.cache_member(self.guild_id, member.clone());
+                    cache.cache_member(self.guild_id, member);
                 }
             }
 
             return;
         }
 
-        cache.cache_members(self.guild_id, self.members.clone());
+        cache.cache_members(self.guild_id, self.members);
     }
 }
 
 impl UpdateCache for MemberRemove {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
             return;
         }
@@ -184,8 +184,6 @@ impl UpdateCache for MemberRemove {
                 .current_user()
                 .map_or(true, |user| user.id != self.user.id)
         {
-            return;
-        }
 
         cache.members.remove(&(self.guild_id, self.user.id));
 
@@ -210,7 +208,7 @@ impl UpdateCache for MemberRemove {
 }
 
 impl UpdateCache for MemberUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
             return;
         }
@@ -231,8 +229,8 @@ impl UpdateCache for MemberUpdate {
         member.avatar = self.avatar;
         member.deaf = self.deaf.or_else(|| member.deaf());
         member.mute = self.mute.or_else(|| member.mute());
-        member.nick = self.nick.clone();
-        member.roles = self.roles.clone();
+        member.nick = self.nick;
+        member.roles = self.roles;
         member.joined_at = self.joined_at;
         member.pending = self.pending;
         member.communication_disabled_until = self.communication_disabled_until;
@@ -325,7 +323,7 @@ mod tests {
 
         // Test that removing a user from a guild will cause the ID to be
         // removed from the set, leaving the other ID.
-        cache.update(&MemberRemove {
+        cache.update(MemberRemove {
             guild_id: Id::new(3),
             user: test::user(user_id),
         });
@@ -338,7 +336,7 @@ mod tests {
 
         // Test that removing the user from its last guild removes the user's
         // entry.
-        cache.update(&MemberRemove {
+        cache.update(MemberRemove {
             guild_id: Id::new(1),
             user: test::user(user_id),
         });

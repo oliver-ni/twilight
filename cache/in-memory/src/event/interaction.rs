@@ -5,9 +5,9 @@ use twilight_model::{
 };
 
 impl UpdateCache for InteractionCreate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         #[allow(clippy::single_match)]
-        match &self.0 {
+        match self.0 {
             Interaction::ApplicationCommand(command) => {
                 if cache.wants(ResourceType::MEMBER) {
                     if let Some(member) = &command.member {
@@ -27,7 +27,7 @@ impl UpdateCache for InteractionCreate {
                     cache.cache_user(Cow::Borrowed(user), None);
                 }
 
-                if let Some(resolved) = &command.data.resolved {
+                if let Some(resolved) = command.data.resolved {
                     for u in resolved.users.values() {
                         cache.cache_user(Cow::Borrowed(u), command.guild_id);
 
@@ -48,10 +48,7 @@ impl UpdateCache for InteractionCreate {
 
                     if cache.wants(ResourceType::ROLE) {
                         if let Some(guild_id) = command.guild_id {
-                            cache.cache_roles(
-                                guild_id,
-                                resolved.roles.iter().map(|(_, v)| v).cloned(),
-                            );
+                            cache.cache_roles(guild_id, resolved.roles.into_iter().map(|(_, v)| v));
                         }
                     }
                 }
@@ -93,7 +90,7 @@ mod tests {
 
         let cache = InMemoryCache::new();
 
-        cache.update(&InteractionCreate(Interaction::ApplicationCommand(
+        cache.update(InteractionCreate(Interaction::ApplicationCommand(
             Box::new(ApplicationCommand {
                 application_id: Id::new(1),
                 channel_id: Id::new(2),
