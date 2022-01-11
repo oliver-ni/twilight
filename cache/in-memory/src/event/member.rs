@@ -158,7 +158,7 @@ impl UpdateCache for MemberChunk {
             if let Some(current_user) = cache.current_user() {
                 let current_member = self
                     .members
-                    .iter()
+                    .into_iter()
                     .find(|member| member.user.id == current_user.id);
 
                 if let Some(member) = current_member {
@@ -184,6 +184,8 @@ impl UpdateCache for MemberRemove {
                 .current_user()
                 .map_or(true, |user| user.id != self.user.id)
         {
+            return;
+        }
 
         cache.members.remove(&(self.guild_id, self.user.id));
 
