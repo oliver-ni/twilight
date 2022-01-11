@@ -238,7 +238,7 @@ impl Heartbeater {
             })?;
 
             #[cfg(feature = "tracing")]
-            tracing::debug!(seq, "sending heartbeat");
+            tracing::trace!(seq, "sending heartbeat");
 
             self.tx
                 .send(TungsteniteMessage::Binary(bytes))
@@ -248,7 +248,7 @@ impl Heartbeater {
                 })?;
 
             #[cfg(feature = "tracing")]
-            tracing::debug!(seq, "sent heartbeat");
+            tracing::trace!(seq, "sent heartbeat");
 
             self.heartbeats.send();
         }
