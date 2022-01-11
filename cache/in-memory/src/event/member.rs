@@ -128,23 +128,25 @@ impl InMemoryCache {
 
 impl UpdateCache for MemberAdd {
     fn update(&self, cache: &InMemoryCache) {
-        if !cache.wants(ResourceType::MEMBER) {
+        if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
+            return;
+        }
+
+        if !cache.wants(ResourceType::MEMBER)
+            && cache
+                .current_user()
+                .map_or(true, |user| user.id != self.0.user.id)
+        {
             return;
         }
 
         cache.cache_member(self.guild_id, self.0.clone());
-
-        cache
-            .guild_members
-            .entry(self.guild_id)
-            .or_default()
-            .insert(self.0.user.id);
     }
 }
 
 impl UpdateCache for MemberChunk {
     fn update(&self, cache: &InMemoryCache) {
-        if !cache.wants(ResourceType::MEMBER) {
+        if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
             return;
         }
 
@@ -152,15 +154,36 @@ impl UpdateCache for MemberChunk {
             return;
         }
 
+        if !cache.wants(ResourceType::MEMBER) {
+            if let Some(current_user) = cache.current_user() {
+                let current_member = self
+                    .members
+                    .iter()
+                    .find(|member| member.user.id == current_user.id);
+
+                if let Some(member) = current_member {
+                    cache.cache_member(self.guild_id, member.clone());
+                }
+            }
+
+            return;
+        }
+
         cache.cache_members(self.guild_id, self.members.clone());
-        let mut guild = cache.guild_members.entry(self.guild_id).or_default();
-        guild.extend(self.members.iter().map(|member| member.user.id));
     }
 }
 
 impl UpdateCache for MemberRemove {
     fn update(&self, cache: &InMemoryCache) {
-        if !cache.wants(ResourceType::MEMBER) {
+        if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
+            return;
+        }
+
+        if !cache.wants(ResourceType::MEMBER)
+            && cache
+                .current_user()
+                .map_or(true, |user| user.id != self.user.id)
+        {
             return;
         }
 
@@ -188,7 +211,15 @@ impl UpdateCache for MemberRemove {
 
 impl UpdateCache for MemberUpdate {
     fn update(&self, cache: &InMemoryCache) {
-        if !cache.wants(ResourceType::MEMBER) {
+        if !cache.wants(ResourceType::MEMBER) && !cache.wants(ResourceType::MEMBER_CURRENT) {
+            return;
+        }
+
+        if !cache.wants(ResourceType::MEMBER)
+            && cache
+                .current_user()
+                .map_or(true, |user| user.id != self.user.id)
+        {
             return;
         }
 
