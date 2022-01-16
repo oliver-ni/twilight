@@ -140,6 +140,10 @@ impl UpdateCache for MemberAdd {
             return;
         }
 
+        if let Some(mut guild) = cache.guilds.get_mut(&self.guild_id) {
+            guild.member_count = guild.member_count.map(|count| count + 1);
+        }
+
         cache.cache_member(self.guild_id, self.0);
     }
 }
@@ -205,6 +209,10 @@ impl UpdateCache for MemberRemove {
 
         if remove_user {
             cache.users.remove(&self.user.id);
+        }
+
+        if let Some(mut guild) = cache.guilds.get_mut(&self.guild_id) {
+            guild.member_count = guild.member_count.map(|count| count - 1);
         }
     }
 }
