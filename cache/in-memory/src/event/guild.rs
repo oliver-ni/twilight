@@ -33,13 +33,19 @@ impl InMemoryCache {
             if let Some(current_user) = self.current_user() {
                 let current_member = guild
                     .members
-                    .iter()
+                    .into_iter()
                     .find(|member| member.user.id == current_user.id);
 
                 if let Some(member) = current_member {
                     self.guild_members.insert(guild.id, HashSet::new());
-                    self.cache_member(guild.id, member.clone());
+                    self.cache_member(guild.id, member);
+                } else {
+                    #[cfg(feature = "tracing")]
+                    tracing::warn!("Attempted to cache guild members, but current member was not found in guild members");
                 }
+            } else {
+                #[cfg(feature = "tracing")]
+                tracing::warn!("Attempted to cache guild members, but current_user is None");
             }
         }
 
