@@ -384,7 +384,7 @@ impl ShardProcessor {
         loop {
             if let Err(source) = self.next_payload().await {
                 #[cfg(feature = "tracing")]
-                tracing::warn!("{}", source);
+                tracing::debug!("{}", source);
 
                 self.emit_disconnected(None, None).await;
 

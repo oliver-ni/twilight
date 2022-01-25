@@ -81,7 +81,7 @@ impl SocketForwarder {
                     }
                     Some(Err(_source)) => {
                         #[cfg(feature = "tracing")]
-                        tracing::warn!("socket errored: {}", _source);
+                        tracing::debug!("socket errored: {}", _source);
 
                         break;
                     }
