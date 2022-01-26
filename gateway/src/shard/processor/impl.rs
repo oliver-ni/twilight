@@ -834,7 +834,7 @@ impl ShardProcessor {
         close_frame: Option<&CloseFrame<'_>>,
     ) -> Result<(), ReceivingEventError> {
         #[cfg(feature = "tracing")]
-        tracing::info!("got close code: {:?}", close_frame);
+        tracing::debug!("got close code: {:?}", close_frame);
 
         self.emit_disconnected(
             close_frame.map(|c| c.code.into()),
@@ -1033,7 +1033,7 @@ impl ShardProcessor {
             id
         } else {
             #[cfg(feature = "tracing")]
-            tracing::info!("session id unavailable, reconnecting");
+            tracing::debug!("session id unavailable, reconnecting");
 
             self.reconnect().await;
             return;
