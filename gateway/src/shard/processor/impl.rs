@@ -971,7 +971,7 @@ impl ShardProcessor {
     /// Perform a full reconnect to the gateway, instantiating a new session.
     async fn reconnect(&mut self) {
         #[cfg(feature = "tracing")]
-        tracing::info!("reconnection started");
+        tracing::debug!("reconnection started");
 
         let mut wait = Duration::from_secs(1);
 
