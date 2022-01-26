@@ -81,8 +81,7 @@ impl UpdateCache for UnavailableGuild {
             return;
         }
 
-        cache.guilds.remove(&self.id);
-        cache.unavailable_guilds.insert(self.id);
+        cache.unavailable_guild(self.id);
     }
 }
 
