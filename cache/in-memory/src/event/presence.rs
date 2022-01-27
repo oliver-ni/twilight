@@ -60,7 +60,7 @@ mod tests {
         let guild_id = Id::new(1);
         let user_id = Id::new(1);
 
-        cache.update(&Event::PresenceUpdate(Box::new(PresenceUpdate {
+        cache.update(Event::PresenceUpdate(Box::new(PresenceUpdate {
             activities: Vec::new(),
             client_status: ClientStatus {
                 desktop: Some(Status::Online),

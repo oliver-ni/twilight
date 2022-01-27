@@ -363,7 +363,7 @@ mod tests {
 
         let cache = InMemoryCache::new();
         let voice_state = test::voice_state(GUILD_ID, Some(CHANNEL_ID), USER_ID);
-        cache.update(&VoiceStateUpdate(voice_state.clone()));
+        cache.update(VoiceStateUpdate(voice_state.clone()));
 
         let cached = CachedVoiceState::from(voice_state);
         let in_cache = cache.voice_state(USER_ID, GUILD_ID).unwrap();

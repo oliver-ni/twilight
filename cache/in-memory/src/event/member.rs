@@ -27,6 +27,8 @@ impl InMemoryCache {
 
         if let Some(m) = self.members.get(&id) {
             if *m == member {
+                #[cfg(feature = "tracing")]
+                tracing::debug!("Not caching member, already present");
                 return;
             }
         }

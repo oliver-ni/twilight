@@ -437,12 +437,12 @@ mod tests {
         let member = test::member(user_id, guild_id);
         let guild = test::guild(guild_id, Some(1));
 
-        cache.update(&GuildCreate(guild));
-        cache.update(&MemberAdd(member));
+        cache.update(GuildCreate(guild));
+        cache.update(MemberAdd(member));
 
         assert_eq!(cache.guild(guild_id).unwrap().member_count, Some(2));
 
-        cache.update(&MemberRemove { guild_id, user });
+        cache.update(MemberRemove { guild_id, user });
 
         assert_eq!(cache.guild(guild_id).unwrap().member_count, Some(1));
     }
