@@ -57,6 +57,11 @@ use std::{
     num::{NonZeroI64, NonZeroU64, ParseIntError, TryFromIntError},
     str::FromStr,
 };
+use tinyset::{Fits64, Set64};
+
+/// A space optimized set for [`Id`]s of with a given marker.
+/// Does not heap allocate until a few elements are inserted into it.
+pub type IdSet<T> = Set64<Id<T>>;
 
 /// ID of a resource, such as the ID of a [channel] or [user].
 ///
@@ -168,6 +173,24 @@ impl<T> Id<T> {
         self.value.get()
     }
 
+    /// Return the [`NonZeroU64`] representation of the ID.
+    ///
+    /// # Examples
+    ///
+    /// Create an ID with a value and then confirm its nonzero value:
+    ///
+    /// ```
+    /// use std::num::NonZeroU64;
+    /// use twilight_model::id::{marker::ChannelMarker, Id};
+    ///
+    /// let channel_id = Id::<ChannelMarker>::new(7);
+    ///
+    /// assert_eq!(NonZeroU64::new(7).unwrap(), channel_id.into_nonzero());
+    /// ```
+    pub const fn into_nonzero(self) -> NonZeroU64 {
+        self.value
+    }
+
     /// Cast an ID from one type to another.
     ///
     /// # Examples
@@ -184,6 +207,30 @@ impl<T> Id<T> {
     /// ```
     pub const fn cast<New>(self) -> Id<New> {
         Id::from_nonzero(self.value)
+    }
+}
+
+// Reorder the components of a Discord snowflake so that the bottom bits change more regularly
+// than the upper bits. This allows for less memory usage when put into a Set64.
+impl<T: Copy> Fits64 for Id<T> {
+    #[allow(unsafe_code)]
+    unsafe fn from_u64(x: u64) -> Self {
+        let increment = (x >> 52) & 0xFFF;
+        let internal = (x >> 30) & 0x3F_F000;
+        let timestamp = x << 22;
+        let value = timestamp | internal | increment;
+        Self {
+            phantom: PhantomData,
+            value: NonZeroU64::new(value).unwrap(),
+        }
+    }
+
+    fn to_u64(self) -> u64 {
+        let value = self.value.get();
+        let timestamp = value >> 22;
+        let internal = (value & 0x3F_F000) << 30;
+        let increment = (value & 0xFFF) << 52;
+        increment | internal | timestamp
     }
 }
 
@@ -267,9 +314,21 @@ impl<T> Display for Id<T> {
     }
 }
 
+impl<T> From<Id<T>> for u64 {
+    fn from(id: Id<T>) -> Self {
+        id.get()
+    }
+}
+
 impl<T> From<NonZeroU64> for Id<T> {
     fn from(id: NonZeroU64) -> Self {
         Self::from_nonzero(id)
+    }
+}
+
+impl<T> From<Id<T>> for NonZeroU64 {
+    fn from(id: Id<T>) -> Self {
+        id.into_nonzero()
     }
 }
 
@@ -383,6 +442,7 @@ mod tests {
         num::NonZeroU64,
         str::FromStr,
     };
+    use tinyset::Fits64;
 
     assert_impl_all!(ApplicationMarker: Clone, Copy, Debug, Send, Sync);
     assert_impl_all!(AttachmentMarker: Clone, Copy, Debug, Send, Sync);
@@ -402,7 +462,7 @@ mod tests {
     assert_impl_all!(WebhookMarker: Clone, Copy, Debug, Send, Sync);
     assert_impl_all!(Id<GenericMarker>:
         Clone, Copy, Debug, Deserialize<'static>, Display, Eq, From<NonZeroU64>,
-        FromStr, Hash, Ord, PartialEq, PartialEq<i64>, PartialEq<u64>, PartialOrd, Send, Serialize, Sync,
+        FromStr, Hash, Into<NonZeroU64>, Into<u64>, Ord, PartialEq, PartialEq<i64>, PartialEq<u64>, PartialOrd, Send, Serialize, Sync,
         TryFrom<i64>, TryFrom<u64>
     );
 
@@ -436,6 +496,37 @@ mod tests {
         assert_eq!(123_u64, Id::<GenericMarker>::try_from(123_u64)?);
 
         Ok(())
+    }
+
+    /// Test that conversion methods are correct.
+    #[test]
+    fn test_conversions() {
+        // `Into`
+        assert_eq!(1, u64::from(Id::<GenericMarker>::new(1)));
+        assert_eq!(
+            NonZeroU64::new(1).expect("non zero"),
+            NonZeroU64::from(Id::<GenericMarker>::new(1))
+        );
+    }
+
+    /// Test that creating an ID via [`Id::new`] with a value of zero panics.
+    #[test]
+    fn test_fits_u64() {
+        fn test_symmetric(id: u64) {
+            #[allow(unsafe_code)]
+            unsafe {
+                let id = Id::<GenericMarker>::new(id);
+                let converted = id.to_u64();
+                let reverted = Id::from_u64(converted);
+                assert_eq!(reverted, id);
+            }
+        }
+        test_symmetric(170094554509344770);
+        test_symmetric(937908423402590249);
+        test_symmetric(401990972113813509);
+        test_symmetric(691052431525675048);
+        test_symmetric(429065760929873922);
+        test_symmetric(489846923306467339);
     }
 
     /// Test that creating an ID via [`Id::new`] with a value of zero panics.
