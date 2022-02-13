@@ -1,4 +1,5 @@
 pub mod application;
+pub mod attachment;
 pub mod channel;
 pub mod guild;
 pub mod scheduled_event;
@@ -6,7 +7,6 @@ pub mod sticker;
 pub mod template;
 pub mod user;
 
-mod attachment;
 mod audit_reason;
 mod base;
 mod get_gateway;
@@ -17,8 +17,7 @@ mod multipart;
 mod try_into_request;
 
 pub use self::{
-    attachment::AttachmentFile,
-    audit_reason::{AuditLogReason, AuditLogReasonError},
+    audit_reason::AuditLogReason,
     base::{Request, RequestBuilder},
     get_gateway::GetGateway,
     get_gateway_authed::GetGatewayAuthed,
@@ -52,13 +51,6 @@ impl<T: Serialize> Serialize for NullableField<T> {
             None => serializer.serialize_none(),
         }
     }
-}
-
-#[derive(Serialize)]
-pub(crate) struct PartialAttachment<'a> {
-    pub description: Option<&'a str>,
-    pub filename: &'a str,
-    pub id: u64,
 }
 
 pub(crate) fn audit_header(

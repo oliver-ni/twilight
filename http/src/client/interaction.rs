@@ -14,10 +14,8 @@ use crate::{
     Client,
 };
 use twilight_model::{
-    application::{
-        callback::InteractionResponse,
-        command::{permissions::CommandPermissions, Command},
-    },
+    application::command::{permissions::CommandPermissions, Command},
+    http::interaction::InteractionResponse,
     id::{
         marker::{ApplicationMarker, CommandMarker, GuildMarker, InteractionMarker, MessageMarker},
         Id,
@@ -70,12 +68,13 @@ impl<'a> InteractionClient<'a> {
 
     /// Respond to an interaction, by its ID and token.
     ///
-    /// For variants of [`InteractionResponse`] that contain a [`CallbackData`],
-    /// there is an [associated builder] in the [`twilight-util`] crate.
+    /// For variants of [`InteractionResponse`] that contain
+    /// [`InteractionResponseData`], there is an [associated builder] in the
+    /// [`twilight-util`] crate.
     ///
-    /// [`CallbackData`]: twilight_model::application::callback::CallbackData
+    /// [`InteractionResponseData`]: twilight_model::http::interaction::InteractionResponseData
     /// [`twilight-util`]: https://docs.rs/twilight-util/latest/index.html
-    /// [associated builder]: https://docs.rs/twilight-util/latest/builder/struct.CallbackDataBuilder.html
+    /// [associated builder]: https://docs.rs/twilight-util/latest/twilight_util/builder/struct.InteractionResponseDataBuilder.html
     pub const fn create_response(
         &'a self,
         interaction_id: Id<InteractionMarker>,
@@ -101,6 +100,33 @@ impl<'a> InteractionClient<'a> {
     }
 
     /// Create a followup message to an interaction, by its token.
+    ///
+    /// The message must include at least one of [`attachments`], [`content`],
+    /// or [`embeds`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # #[tokio::main] async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use std::env;
+    /// use twilight_http::Client;
+    /// use twilight_model::id::Id;
+    ///
+    /// let client = Client::new(env::var("DISCORD_TOKEN")?);
+    /// let application_id = Id::new(1);
+    ///
+    /// client
+    ///     .interaction(application_id)
+    ///     .create_followup("webhook token")
+    ///     .content("Pinkie...")?
+    ///     .exec()
+    ///     .await?;
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// [`attachments`]: CreateFollowup::attachments
+    /// [`content`]: CreateFollowup::content
+    /// [`embeds`]: CreateFollowup::embeds
     pub const fn create_followup(&'a self, interaction_token: &'a str) -> CreateFollowup<'a> {
         CreateFollowup::new(self.client, self.application_id, interaction_token)
     }
@@ -182,7 +208,7 @@ impl<'a> InteractionClient<'a> {
     /// [`twilight-util`] crate.
     ///
     /// [`twilight-util`]: https://docs.rs/twilight-util/latest/index.html
-    /// [associated builder]: https://docs.rs/twilight-util/latest/builder/command/struct.CommandBuilder.html
+    /// [associated builder]: https://docs.rs/twilight-util/latest/twilight_util/builder/command/struct.CommandBuilder.html
     pub const fn set_global_commands(&'a self, commands: &'a [Command]) -> SetGlobalCommands<'a> {
         SetGlobalCommands::new(self.client, self.application_id, commands)
     }
@@ -240,7 +266,7 @@ impl<'a> InteractionClient<'a> {
     /// [`twilight-util`] crate.
     ///
     /// [`twilight-util`]: https://docs.rs/twilight_util/index.html
-    /// [associated builder]: https://docs.rs/twilight-util/latest/builder/command/struct.CommandBuilder.html
+    /// [associated builder]: https://docs.rs/twilight-util/latest/twilight_util/builder/command/struct.CommandBuilder.html
     pub const fn set_guild_commands(
         &'a self,
         guild_id: Id<GuildMarker>,
