@@ -33,6 +33,7 @@ pub struct CurrentApplicationInfo {
     #[serde(default)]
     pub rpc_origins: Vec<String>,
     pub slug: Option<String>,
+    pub summary: String,
     pub team: Option<Team>,
     /// URL of the application's terms of service.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -64,6 +65,7 @@ mod tests {
         privacy_policy_url,
         rpc_origins,
         slug,
+        summary,
         team,
         terms_of_service_url,
         verify_key
@@ -113,6 +115,7 @@ mod tests {
             privacy_policy_url: Some("https://privacypolicy".into()),
             rpc_origins: vec!["one".to_owned()],
             slug: Some("app slug".to_owned()),
+            summary: "a summary".to_owned(),
             team: Some(Team {
                 icon: None,
                 id: Id::new(5),
@@ -129,7 +132,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "CurrentApplicationInfo",
-                    len: 17,
+                    len: 18,
                 },
                 Token::Str("bot_public"),
                 Token::Bool(true),
@@ -190,6 +193,8 @@ mod tests {
                 Token::Str("slug"),
                 Token::Some,
                 Token::Str("app slug"),
+                Token::Str("summary"),
+                Token::Str("a summary"),
                 Token::Str("team"),
                 Token::Some,
                 Token::Struct {

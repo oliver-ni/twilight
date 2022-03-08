@@ -34,9 +34,6 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{Serialize, Serializer};
 use std::iter;
 
-/// Name of the audit log reason header.
-const REASON_HEADER_NAME: &str = "x-audit-log-reason";
-
 /// Field that either serializes to null or a value.
 ///
 /// This is particularly useful when combined with an `Option` by allowing three
@@ -59,7 +56,7 @@ impl<T: Serialize> Serialize for NullableField<T> {
 pub(crate) fn audit_header(
     reason: &str,
 ) -> Result<impl Iterator<Item = (HeaderName, HeaderValue)>, Error> {
-    let header_name = HeaderName::from_static(REASON_HEADER_NAME);
+    let header_name = HeaderName::from_static("x-audit-log-reason");
     let encoded_reason = utf8_percent_encode(reason, NON_ALPHANUMERIC).to_string();
     let header_value = HeaderValue::from_str(&encoded_reason).map_err(|e| Error {
         kind: ErrorType::CreatingHeader {
