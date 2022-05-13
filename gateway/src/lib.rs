@@ -38,7 +38,7 @@ pub use twilight_gateway_queue as queue;
 pub use twilight_model::gateway::event::{Event, EventType};
 
 /// Discord API version used by this crate.
-pub const API_VERSION: u8 = 10;
+pub const API_VERSION: u8 = 9;
 
 /// Discord gateway url.
 const URL: &str = "wss://gateway.discord.gg";
