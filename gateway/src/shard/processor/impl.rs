@@ -396,7 +396,7 @@ impl ShardProcessor {
     pub async fn run(mut self) {
         loop {
             if let Err(source) = self.next_payload().await {
-                tracing::warn!("{source}");
+                tracing::debug!("{source}");
 
                 self.emit_disconnected(None, None).await;
 
@@ -834,7 +834,7 @@ impl ShardProcessor {
         &mut self,
         close_frame: Option<&CloseFrame<'_>>,
     ) -> Result<(), ReceivingEventError> {
-        tracing::info!("got close code: {close_frame:?}");
+        tracing::debug!("got close code: {close_frame:?}");
 
         self.emit_disconnected(
             close_frame.map(|c| c.code.into()),
@@ -992,7 +992,7 @@ impl ShardProcessor {
 
     /// Perform a full reconnect to the gateway, instantiating a new session.
     async fn reconnect(&mut self) {
-        tracing::info!("reconnection started");
+        tracing::debug!("reconnection started");
 
         let mut wait = Duration::from_secs(1);
 
@@ -1060,7 +1060,7 @@ impl ShardProcessor {
         let id = if let Some(id) = self.session.id() {
             id
         } else {
-            tracing::info!("session id unavailable, reconnecting");
+            tracing::debug!("session id unavailable, reconnecting");
 
             self.reconnect().await;
             return;

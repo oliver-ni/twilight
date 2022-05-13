@@ -235,7 +235,7 @@ impl Heartbeater {
                 source: Some(Box::new(source)),
             })?;
 
-            tracing::debug!(seq, "sending heartbeat");
+            tracing::trace!(seq, "sending heartbeat");
 
             self.tx
                 .send(TungsteniteMessage::Binary(bytes))
@@ -244,7 +244,7 @@ impl Heartbeater {
                     source: Some(Box::new(source)),
                 })?;
 
-            tracing::debug!(seq, "sent heartbeat");
+            tracing::trace!(seq, "sent heartbeat");
 
             self.heartbeats.send();
         }

@@ -73,7 +73,7 @@ impl SocketForwarder {
                         }
                     }
                     Some(Err(source)) => {
-                        tracing::warn!("socket errored: {source}");
+                        tracing::debug!("socket errored: {source}");
 
                         break;
                     }
