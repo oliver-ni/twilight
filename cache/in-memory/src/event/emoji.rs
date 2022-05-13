@@ -61,12 +61,12 @@ impl InMemoryCache {
 }
 
 impl UpdateCache for GuildEmojisUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::EMOJI) {
             return;
         }
 
-        cache.cache_emojis(self.guild_id, self.emojis.clone());
+        cache.cache_emojis(self.guild_id, self.emojis);
     }
 }
 
@@ -159,7 +159,7 @@ mod tests {
         cache.cache_emoji(guild_id, emote_2.clone());
         cache.cache_emoji(guild_id, emote_3.clone());
 
-        cache.update(&GuildEmojisUpdate {
+        cache.update(GuildEmojisUpdate {
             emojis: vec![emote.clone(), emote_3.clone()],
             guild_id,
         });
@@ -170,7 +170,7 @@ mod tests {
         assert!(cache.emoji(emote_2.id).is_none());
         assert!(cache.emoji(emote_3.id).is_some());
 
-        cache.update(&GuildEmojisUpdate {
+        cache.update(GuildEmojisUpdate {
             emojis: vec![emote.clone()],
             guild_id,
         });
@@ -182,7 +182,7 @@ mod tests {
 
         let emote_4 = test::emoji(Id::new(4), None);
 
-        cache.update(&GuildEmojisUpdate {
+        cache.update(GuildEmojisUpdate {
             emojis: vec![emote_4.clone()],
             guild_id,
         });
@@ -192,7 +192,7 @@ mod tests {
         assert!(cache.emoji(emote_4.id).is_some());
         assert!(cache.emoji(emote.id).is_none());
 
-        cache.update(&GuildEmojisUpdate {
+        cache.update(GuildEmojisUpdate {
             emojis: vec![],
             guild_id,
         });

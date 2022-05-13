@@ -44,16 +44,16 @@ impl InMemoryCache {
             .insert(member_id);
     }
 
-    pub(crate) fn cache_borrowed_partial_member(
+    pub(crate) fn cache_partial_member(
         &self,
         guild_id: Id<GuildMarker>,
-        member: &PartialMember,
+        member: PartialMember,
         user_id: Id<UserMarker>,
     ) {
         let id = (guild_id, user_id);
 
         if let Some(m) = self.members.get(&id) {
-            if &*m == member {
+            if *m == member {
                 return;
             }
         }
@@ -63,7 +63,7 @@ impl InMemoryCache {
             .or_default()
             .insert(user_id);
 
-        let cached = CachedMember::from_partial_member(guild_id, user_id, member.clone());
+        let cached = CachedMember::from_partial_member(guild_id, user_id, member);
         self.members.insert(id, cached);
     }
 
@@ -98,7 +98,7 @@ impl InMemoryCache {
 }
 
 impl UpdateCache for MemberAdd {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if cache.wants(ResourceType::GUILD) {
             if let Some(mut guild) = cache.guilds.get_mut(&self.guild_id) {
                 guild.member_count = guild.member_count.map(|count| count + 1);
@@ -109,18 +109,12 @@ impl UpdateCache for MemberAdd {
             return;
         }
 
-        cache.cache_member(self.guild_id, self.0.clone());
-
-        cache
-            .guild_members
-            .entry(self.guild_id)
-            .or_default()
-            .insert(self.0.user.id);
+        cache.cache_member(self.guild_id, self.0);
     }
 }
 
 impl UpdateCache for MemberChunk {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MEMBER) {
             return;
         }
@@ -129,14 +123,12 @@ impl UpdateCache for MemberChunk {
             return;
         }
 
-        cache.cache_members(self.guild_id, self.members.clone());
-        let mut guild = cache.guild_members.entry(self.guild_id).or_default();
-        guild.extend(self.members.iter().map(|member| member.user.id));
+        cache.cache_members(self.guild_id, self.members);
     }
 }
 
 impl UpdateCache for MemberRemove {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if cache.wants(ResourceType::GUILD) {
             if let Some(mut guild) = cache.guilds.get_mut(&self.guild_id) {
                 guild.member_count = guild.member_count.map(|count| count - 1);
@@ -170,7 +162,7 @@ impl UpdateCache for MemberRemove {
 }
 
 impl UpdateCache for MemberUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MEMBER) {
             return;
         }
@@ -186,8 +178,8 @@ impl UpdateCache for MemberUpdate {
         member.avatar = self.avatar;
         member.deaf = self.deaf.or_else(|| member.deaf());
         member.mute = self.mute.or_else(|| member.mute());
-        member.nick = self.nick.clone();
-        member.roles = self.roles.clone();
+        member.nick = self.nick;
+        member.roles = self.roles;
         member.joined_at = self.joined_at;
         member.pending = self.pending;
         member.communication_disabled_until = self.communication_disabled_until;
@@ -281,7 +273,7 @@ mod tests {
 
         // Test that removing a user from a guild will cause the ID to be
         // removed from the set, leaving the other ID.
-        cache.update(&MemberRemove {
+        cache.update(MemberRemove {
             guild_id: Id::new(3),
             user: test::user(user_id),
         });
@@ -294,7 +286,7 @@ mod tests {
 
         // Test that removing the user from its last guild removes the user's
         // entry.
-        cache.update(&MemberRemove {
+        cache.update(MemberRemove {
             guild_id: Id::new(1),
             user: test::user(user_id),
         });

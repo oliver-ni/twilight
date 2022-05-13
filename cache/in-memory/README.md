@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     while let Some(event) = events.next().await {
         // Update the cache with the event.
-        cache.update(&event);
+        cache.update(event.clone());
     }
 
     Ok(())

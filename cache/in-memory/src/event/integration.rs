@@ -37,24 +37,19 @@ impl InMemoryCache {
 }
 
 impl UpdateCache for IntegrationCreate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::INTEGRATION) {
             return;
         }
 
         if let Some(guild_id) = self.guild_id {
-            crate::upsert_guild_item(
-                &cache.integrations,
-                guild_id,
-                (guild_id, self.id),
-                self.0.clone(),
-            );
+            crate::upsert_guild_item(&cache.integrations, guild_id, (guild_id, self.id), self.0);
         }
     }
 }
 
 impl UpdateCache for IntegrationDelete {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::INTEGRATION) {
             return;
         }
@@ -64,13 +59,13 @@ impl UpdateCache for IntegrationDelete {
 }
 
 impl UpdateCache for IntegrationUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::INTEGRATION) {
             return;
         }
 
         if let Some(guild_id) = self.guild_id {
-            cache.cache_integration(guild_id, self.0.clone());
+            cache.cache_integration(guild_id, self.0);
         }
     }
 }

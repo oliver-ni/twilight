@@ -7,7 +7,7 @@ use twilight_model::{
 };
 
 impl UpdateCache for ReactionAdd {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::REACTION) {
             return;
         }
@@ -42,7 +42,7 @@ impl UpdateCache for ReactionAdd {
 
             message.reactions.push(MessageReaction {
                 count: 1,
-                emoji: self.0.emoji.clone(),
+                emoji: self.0.emoji,
                 me,
             });
         }
@@ -50,7 +50,7 @@ impl UpdateCache for ReactionAdd {
 }
 
 impl UpdateCache for ReactionRemove {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::REACTION) {
             return;
         }
@@ -86,7 +86,7 @@ impl UpdateCache for ReactionRemove {
 }
 
 impl UpdateCache for ReactionRemoveAll {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::REACTION) {
             return;
         }
@@ -102,7 +102,7 @@ impl UpdateCache for ReactionRemoveAll {
 }
 
 impl UpdateCache for ReactionRemoveEmoji {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::REACTION) {
             return;
         }
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn reaction_remove() {
         let cache = test::cache_with_message_and_reactions();
-        cache.update(&ReactionRemove(Reaction {
+        cache.update(ReactionRemove(Reaction {
             channel_id: Id::new(2),
             emoji: ReactionType::Unicode {
                 name: "😀".to_owned(),
@@ -196,7 +196,7 @@ mod tests {
             message_id: Id::new(4),
             user_id: Id::new(5),
         }));
-        cache.update(&ReactionRemove(Reaction {
+        cache.update(ReactionRemove(Reaction {
             channel_id: Id::new(2),
             emoji: ReactionType::Custom {
                 animated: false,
@@ -233,7 +233,7 @@ mod tests {
     #[test]
     fn reaction_remove_all() {
         let cache = test::cache_with_message_and_reactions();
-        cache.update(&ReactionRemoveAll {
+        cache.update(ReactionRemoveAll {
             channel_id: Id::new(2),
             message_id: Id::new(4),
             guild_id: Some(Id::new(1)),
@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn reaction_remove_emoji() {
         let cache = test::cache_with_message_and_reactions();
-        cache.update(&ReactionRemoveEmoji {
+        cache.update(ReactionRemoveEmoji {
             channel_id: Id::new(2),
             emoji: ReactionType::Unicode {
                 name: "😀".to_owned(),
@@ -255,7 +255,7 @@ mod tests {
             guild_id: Id::new(1),
             message_id: Id::new(4),
         });
-        cache.update(&ReactionRemoveEmoji {
+        cache.update(ReactionRemoveEmoji {
             channel_id: Id::new(2),
             emoji: ReactionType::Custom {
                 animated: false,

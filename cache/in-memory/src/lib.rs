@@ -373,7 +373,7 @@ impl InMemoryCache {
     }
 
     /// Update the cache with an event from the gateway.
-    pub fn update(&self, value: &impl UpdateCache) {
+    pub fn update(&self, value: impl UpdateCache) {
         value.update(self);
     }
 
@@ -808,7 +808,11 @@ pub trait UpdateCache: private::Sealed {
     /// Updates the cache based on data contained within an event.
     // Allow this for presentation purposes in documentation.
     #[allow(unused_variables)]
-    fn update(&self, cache: &InMemoryCache) {}
+    fn update(self, cache: &InMemoryCache)
+    where
+        Self: Sized,
+    {
+    }
 }
 
 /// Iterator over a voice channel's list of voice states.
@@ -838,48 +842,48 @@ impl<'a> Iterator for VoiceChannelStates<'a> {
 impl UpdateCache for Event {
     // clippy: using `.deref()` is cleaner
     #[allow(clippy::cognitive_complexity, clippy::explicit_deref_methods)]
-    fn update(&self, c: &InMemoryCache) {
+    fn update(self, c: &InMemoryCache) {
         match self {
-            Event::ChannelCreate(v) => c.update(v.deref()),
-            Event::ChannelDelete(v) => c.update(v.deref()),
+            Event::ChannelCreate(v) => c.update(*v),
+            Event::ChannelDelete(v) => c.update(*v),
             Event::ChannelPinsUpdate(v) => c.update(v),
-            Event::ChannelUpdate(v) => c.update(v.deref()),
-            Event::GuildCreate(v) => c.update(v.deref()),
+            Event::ChannelUpdate(v) => c.update(*v),
+            Event::GuildCreate(v) => c.update(*v),
             Event::GuildDelete(v) => c.update(v),
             Event::GuildEmojisUpdate(v) => c.update(v),
             Event::GuildStickersUpdate(v) => c.update(v),
-            Event::GuildUpdate(v) => c.update(v.deref()),
-            Event::IntegrationCreate(v) => c.update(v.deref()),
-            Event::IntegrationDelete(v) => c.update(v.deref()),
-            Event::IntegrationUpdate(v) => c.update(v.deref()),
-            Event::InteractionCreate(v) => c.update(v.deref()),
-            Event::MemberAdd(v) => c.update(v.deref()),
+            Event::GuildUpdate(v) => c.update(*v),
+            Event::IntegrationCreate(v) => c.update(*v),
+            Event::IntegrationDelete(v) => c.update(v),
+            Event::IntegrationUpdate(v) => c.update(*v),
+            Event::InteractionCreate(v) => c.update(*v),
+            Event::MemberAdd(v) => c.update(*v),
             Event::MemberRemove(v) => c.update(v),
-            Event::MemberUpdate(v) => c.update(v.deref()),
+            Event::MemberUpdate(v) => c.update(*v),
             Event::MemberChunk(v) => c.update(v),
-            Event::MessageCreate(v) => c.update(v.deref()),
+            Event::MessageCreate(v) => c.update(*v),
             Event::MessageDelete(v) => c.update(v),
             Event::MessageDeleteBulk(v) => c.update(v),
-            Event::MessageUpdate(v) => c.update(v.deref()),
-            Event::PresenceUpdate(v) => c.update(v.deref()),
-            Event::ReactionAdd(v) => c.update(v.deref()),
-            Event::ReactionRemove(v) => c.update(v.deref()),
+            Event::MessageUpdate(v) => c.update(*v),
+            Event::PresenceUpdate(v) => c.update(*v),
+            Event::ReactionAdd(v) => c.update(*v),
+            Event::ReactionRemove(v) => c.update(*v),
             Event::ReactionRemoveAll(v) => c.update(v),
             Event::ReactionRemoveEmoji(v) => c.update(v),
-            Event::Ready(v) => c.update(v.deref()),
+            Event::Ready(v) => c.update(*v),
             Event::RoleCreate(v) => c.update(v),
             Event::RoleDelete(v) => c.update(v),
             Event::RoleUpdate(v) => c.update(v),
             Event::StageInstanceCreate(v) => c.update(v),
             Event::StageInstanceDelete(v) => c.update(v),
             Event::StageInstanceUpdate(v) => c.update(v),
-            Event::ThreadCreate(v) => c.update(v.deref()),
-            Event::ThreadUpdate(v) => c.update(v.deref()),
+            Event::ThreadCreate(v) => c.update(*v),
+            Event::ThreadUpdate(v) => c.update(*v),
             Event::ThreadDelete(v) => c.update(v),
             Event::ThreadListSync(v) => c.update(v),
             Event::UnavailableGuild(v) => c.update(v),
             Event::UserUpdate(v) => c.update(v),
-            Event::VoiceStateUpdate(v) => c.update(v.deref()),
+            Event::VoiceStateUpdate(v) => c.update(*v),
             // Ignored events.
             Event::BanAdd(_)
             | Event::BanRemove(_)
@@ -929,7 +933,7 @@ mod tests {
     #[test]
     fn syntax_update() {
         let cache = InMemoryCache::new();
-        cache.update(&RoleDelete {
+        cache.update(RoleDelete {
             guild_id: Id::new(1),
             role_id: Id::new(1),
         });

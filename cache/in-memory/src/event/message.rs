@@ -5,17 +5,17 @@ use twilight_model::gateway::payload::incoming::{
 };
 
 impl UpdateCache for MessageCreate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(mut self, cache: &InMemoryCache) {
         if cache.wants(ResourceType::USER) {
             cache.cache_user(Cow::Borrowed(&self.author), self.guild_id);
         }
 
         if let (Some(member), Some(guild_id), true) = (
-            &self.member,
+            self.member.take(),
             self.guild_id,
             cache.wants(ResourceType::MEMBER),
         ) {
-            cache.cache_borrowed_partial_member(guild_id, member, self.author.id);
+            cache.cache_partial_member(guild_id, member, self.author.id);
         }
 
         if !cache.wants(ResourceType::MESSAGE) {
@@ -37,12 +37,12 @@ impl UpdateCache for MessageCreate {
         channel_messages.push_front(self.0.id);
         cache
             .messages
-            .insert(self.0.id, CachedMessage::from(self.0.clone()));
+            .insert(self.0.id, CachedMessage::from(self.0));
     }
 }
 
 impl UpdateCache for MessageDelete {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MESSAGE) {
             return;
         }
@@ -58,7 +58,7 @@ impl UpdateCache for MessageDelete {
 }
 
 impl UpdateCache for MessageDeleteBulk {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MESSAGE) {
             return;
         }
@@ -79,34 +79,34 @@ impl UpdateCache for MessageDeleteBulk {
 }
 
 impl UpdateCache for MessageUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::MESSAGE) {
             return;
         }
 
         if let Some(mut message) = cache.messages.get_mut(&self.id) {
-            if let Some(attachments) = &self.attachments {
-                message.attachments = attachments.clone();
+            if let Some(attachments) = self.attachments {
+                message.attachments = attachments;
             }
 
-            if let Some(content) = &self.content {
-                message.content = content.clone();
+            if let Some(content) = self.content {
+                message.content = content;
             }
 
             if let Some(edited_timestamp) = self.edited_timestamp {
                 message.edited_timestamp.replace(edited_timestamp);
             }
 
-            if let Some(embeds) = &self.embeds {
-                message.embeds = embeds.clone();
+            if let Some(embeds) = self.embeds {
+                message.embeds = embeds;
             }
 
             if let Some(mention_everyone) = self.mention_everyone {
                 message.mention_everyone = mention_everyone;
             }
 
-            if let Some(mention_roles) = &self.mention_roles {
-                message.mention_roles = mention_roles.clone();
+            if let Some(mention_roles) = self.mention_roles {
+                message.mention_roles = mention_roles;
             }
 
             if let Some(mentions) = &self.mentions {
@@ -208,9 +208,9 @@ mod tests {
             webhook_id: None,
         };
 
-        cache.update(&MessageCreate(msg.clone()));
+        cache.update(MessageCreate(msg.clone()));
         msg.id = Id::new(5);
-        cache.update(&MessageCreate(msg));
+        cache.update(MessageCreate(msg));
 
         {
             let entry = cache.user_guilds.get(&Id::new(3)).unwrap();

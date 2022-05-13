@@ -27,14 +27,15 @@ impl InMemoryCache {
 }
 
 impl UpdateCache for PresenceUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::PRESENCE) {
             return;
         }
 
-        let presence = CachedPresence::from_model(self.0.clone());
+        let guild_id = self.guild_id;
+        let presence = CachedPresence::from_model(self.0);
 
-        cache.cache_presence(self.guild_id, presence);
+        cache.cache_presence(guild_id, presence);
     }
 }
 
@@ -68,7 +69,7 @@ mod tests {
             status: Status::Online,
             user: UserOrId::User(test::user(user_id)),
         });
-        cache.update(&Event::PresenceUpdate(Box::new(payload)));
+        cache.update(Event::PresenceUpdate(Box::new(payload)));
 
         assert_eq!(1, cache.presences.len());
         assert_eq!(1, cache.guild_presences.len());

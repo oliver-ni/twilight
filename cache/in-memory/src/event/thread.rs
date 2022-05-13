@@ -4,17 +4,17 @@ use twilight_model::gateway::payload::incoming::{
 };
 
 impl UpdateCache for ThreadCreate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::CHANNEL) {
             return;
         }
 
-        cache.cache_channel(self.0.clone());
+        cache.cache_channel(self.0);
     }
 }
 
 impl UpdateCache for ThreadDelete {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::CHANNEL) {
             return;
         }
@@ -24,21 +24,21 @@ impl UpdateCache for ThreadDelete {
 }
 
 impl UpdateCache for ThreadListSync {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::CHANNEL) {
             return;
         }
 
-        cache.cache_channels(self.threads.clone());
+        cache.cache_channels(self.threads);
     }
 }
 
 impl UpdateCache for ThreadUpdate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(self, cache: &InMemoryCache) {
         if !cache.wants(ResourceType::CHANNEL) {
             return;
         }
 
-        cache.cache_channel(self.0.clone());
+        cache.cache_channel(self.0);
     }
 }

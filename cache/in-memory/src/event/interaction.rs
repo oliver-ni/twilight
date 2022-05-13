@@ -5,22 +5,23 @@ use twilight_model::{
 };
 
 impl UpdateCache for InteractionCreate {
-    fn update(&self, cache: &InMemoryCache) {
+    fn update(mut self, cache: &InMemoryCache) {
         // Cache interaction member
         if cache.wants(ResourceType::MEMBER) {
-            if let (Some(member), Some(guild_id)) = (&self.member, self.guild_id) {
-                if let Some(user) = &member.user {
-                    cache.cache_user(Cow::Borrowed(user), self.guild_id);
+            if let (Some(mut member), Some(guild_id)) = (self.member.take(), self.guild_id) {
+                if let Some(user) = member.user.take() {
+                    let id = user.id;
+                    cache.cache_user(Cow::Owned(user), self.guild_id);
 
-                    cache.cache_borrowed_partial_member(guild_id, member, user.id);
+                    cache.cache_partial_member(guild_id, member, id);
                 }
             }
         }
 
         // Cache interaction user
         if cache.wants(ResourceType::USER) {
-            if let Some(user) = &self.user {
-                cache.cache_user(Cow::Borrowed(user), None);
+            if let Some(user) = self.user.take() {
+                cache.cache_user(Cow::Owned(user), None);
             }
         }
 
@@ -97,7 +98,7 @@ mod tests {
 
         let cache = InMemoryCache::new();
 
-        cache.update(&InteractionCreate(Interaction {
+        cache.update(InteractionCreate(Interaction {
             app_permissions: Some(Permissions::SEND_MESSAGES),
             application_id: Id::new(1),
             channel_id: Some(Id::new(2)),
